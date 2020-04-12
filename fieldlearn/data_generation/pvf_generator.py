@@ -49,6 +49,9 @@ class PVFGenerator:
         self.smoothing_type = smoothing_type
         self.gaussian_sigma = gaussian_sigma
         self.spatial_dims_n = spatial_dims_n
+        self.cardano_tol = 1e-2
+        self.cardano_division_eps = 1e-3
+        self.similar_direction_tol = 1e-2
 
     def normalize_paths(self, paths):
         global_bbox = find_global_bbox(paths)
@@ -92,7 +95,8 @@ class PVFGenerator:
 
         pixel_coords = prepare_pixel_coordinates(
             torch.empty([1, self.patch_height, self.patch_width], dtype=torch.float32)).to(device)
-        canonical_x, canonical_y = beziers.calculate_canonical_coordinates(pixel_coords)
+        canonical_x, canonical_y = beziers.calculate_canonical_coordinates(
+            pixel_coords, tol=self.cardano_tol, division_epsilon=self.cardano_division_eps)
 
         vector_field = beziers.get_vector_field_at(canonical_y)
         vector_field = vector_field[0].transpose(1, 0)
@@ -119,7 +123,11 @@ class PVFGenerator:
 
             result[0][mask_first_comp] = tangent_field[mask_first_comp].copy()
             result[1][mask_first_comp] = tangent_field[mask_first_comp].copy() * 1j
-            result[1][mask_second_comp] = tangent_field[mask_second_comp].copy()
+
+            mask_is_similar = (np.abs(result[0] - tangent_field) < self.similar_direction_tol) | \
+                              (np.abs(result[0] + tangent_field) < self.similar_direction_tol)
+
+            result[1][~mask_is_similar & mask_second_comp] = tangent_field[mask_second_comp & ~mask_is_similar].copy()
 
         u, v = result
         mask = np.isclose(result, 0+0j)
