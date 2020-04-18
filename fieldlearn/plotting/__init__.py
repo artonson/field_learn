@@ -1,26 +1,55 @@
 import numpy as np
 import matplotlib.pyplot as plt
-
+import matplotlib.path as mpath
+import matplotlib.patches as mpatches
+from vectran.data.graphics.graphics import VectorImage
+from vectran.renderers.cairo import render as cairo_render
 from fieldlearn.data_generation.utils import inverse_transfom_slopes
 
+DEFAULT_QUIVEROPTS = dict(pivot='middle', units='xy',
+                          headlength=0, headwidth=1,
+                          scale=1.1, linewidth=1, width=0.1)
 
-def plot_vector_field_cross(raster, field, plot_type='cross', figsize=(10, 10)):
+
+def visualize_vector_image(img: VectorImage, renderer=cairo_render, figsize=(10, 10)):
+    raster = img.render(renderer)
+    render_height, render_width = raster.shape
+
+    join_points = []
+    control_points = []
+    control_commands = []
+    for path in img.paths:
+        for curve in path:
+            control_points.extend([(p.real, p.imag) for p in curve.bpoints()])
+            join_points.append(control_points[-1])
+            control_points.append(control_points[-1])
+            control_commands.extend([mpath.Path.MOVETO, mpath.Path.CURVE3, mpath.Path.CURVE3, mpath.Path.MOVETO])
+
+    control_points.append(control_points[-1])
+    control_commands.append(mpath.Path.CLOSEPOLY)
+
+    fig, ax = plt.subplots(figsize=figsize)
+    pp = mpatches.PathPatch(mpath.Path(control_points, control_commands), fc='none', linewidth=2.5, edgecolor='#FFC11E')
+
+    x, y = zip(*join_points)
+    ax.imshow(raster, cmap='gray', origin='upper')
+    ax.plot(x, y, color='#FFC11E', marker='o', markersize=5, markeredgecolor='black', linestyle='')
+    ax.add_patch(pp)
+    ax.set_xlim(0, render_width)
+    ax.set_ylim(render_height, 0)
+    plt.close()
+    return fig
+
+
+def visualize_vector_field_cross(raster, field, figsize=(10, 10)):
     """
-    Plots a vector field
-    :param raster:
-        raster image
-    :param field:
-        field based on the raster image
-    :param plot_type:
-        'cross' — plot two vectors as a cross with center in pixel
-        'angle' — plot two vectors as an angle with center in pixel
+    Plots a vector field with cross stitches
+
+    :param raster: raster image
+    :param field: field based on the raster image
     :param figsize
     :return plt.figure
     """
-    fig = plt.figure(figsize=figsize)
-
-    plt.imshow(raster, cmap='gray', origin='upper')
-
     _, patch_height, patch_width = field.shape
     c_0 = np.zeros((patch_height, patch_width), dtype=np.complex64)
     c_0.real, c_0.imag = field[0], field[1]
@@ -30,25 +59,18 @@ def plot_vector_field_cross(raster, field, plot_type='cross', figsize=(10, 10)):
 
     u, v = inverse_transfom_slopes(c_0, c_2)
 
-    for h in range(patch_height):
-        for w in range(patch_width):
+    h_range = np.arange(patch_height)
+    w_range = np.arange(patch_width)
 
-            u_ = u[h, w]
-            v_ = v[h, w]
-
-            if plot_type == 'angle':
-                plt.arrow(w, h, u_.real, u_.imag, color='red')
-                plt.arrow(w, h, v_.real, v_.imag, color='brown')
-
-            elif plot_type == 'cross':
-                plt.plot((w - u_.real / 2, w + u_.real / 2), (h - u_.imag / 2, h + u_.imag / 2), color='red')
-                plt.plot((w - v_.real / 2, w + v_.real / 2), (h - v_.imag / 2, h + v_.imag / 2), color='brown')
-
+    fig = plt.figure(figsize=figsize)
+    plt.imshow(raster, cmap='gray', origin='upper')
+    plt.quiver(h_range, w_range, u.real, u.imag, color='red', **DEFAULT_QUIVEROPTS)
+    plt.quiver(h_range, w_range, v.real, v.imag, color='brown', **DEFAULT_QUIVEROPTS)
     plt.close()
     return fig
 
 
-def plot_vector_field_heatmap(field):
+def visualize_vector_field_heatmap(field):
     fig, [[ax1, ax2], [ax3, ax4]] = plt.subplots(2, 2, figsize=(10, 10))
     ax1.imshow(field[0])
     ax1.set_title('component 1, real part')
