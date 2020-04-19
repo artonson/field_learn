@@ -4,17 +4,10 @@ import matplotlib.path as mpath
 import matplotlib.patches as mpatches
 from vectran.data.graphics.graphics import VectorImage
 from vectran.renderers.cairo import render as cairo_render
-from fieldlearn.data_generation.utils import inverse_transfom_slopes
-
-DEFAULT_QUIVEROPTS = dict(pivot='middle', units='xy',
-                          headlength=0, headwidth=1,
-                          scale=1.1, linewidth=1, width=0.1)
 
 
-def visualize_vector_image(img: VectorImage, renderer=cairo_render, figsize=(10, 10)):
-    raster = img.render(renderer)
-    render_height, render_width = raster.shape
-
+def draw_vector_image_skeleton(img: VectorImage, renderer=cairo_render, figscale=.4):
+    # build control commands
     join_points = []
     control_points = []
     control_commands = []
@@ -28,6 +21,12 @@ def visualize_vector_image(img: VectorImage, renderer=cairo_render, figsize=(10,
     control_points.append(control_points[-1])
     control_commands.append(mpath.Path.CLOSEPOLY)
 
+    # render the image
+    raster = img.render(renderer)
+    render_height, render_width = raster.shape
+
+    # plot image skeleton
+    figsize = np.asarray(raster.shape) * figscale
     fig, ax = plt.subplots(figsize=figsize)
     pp = mpatches.PathPatch(mpath.Path(control_points, control_commands), fc='none', linewidth=2.5, edgecolor='#FFC11E')
 
@@ -41,44 +40,19 @@ def visualize_vector_image(img: VectorImage, renderer=cairo_render, figsize=(10,
     return fig
 
 
-def visualize_vector_field_cross(raster, field, figsize=(10, 10)):
-    """
-    Plots a vector field with cross stitches
-
-    :param raster: raster image
-    :param field: field based on the raster image
-    :param figsize
-    :return plt.figure
-    """
-    _, patch_height, patch_width = field.shape
-    c_0 = np.zeros((patch_height, patch_width), dtype=np.complex64)
-    c_0.real, c_0.imag = field[0], field[1]
-
-    c_2 = np.zeros((patch_height, patch_width), dtype=np.complex64)
-    c_2.real, c_2.imag = field[2], field[3]
-
-    u, v = inverse_transfom_slopes(c_0, c_2)
-
-    h_range = np.arange(patch_height)
-    w_range = np.arange(patch_width)
-
+def draw_polyvector_field(u, v, raster, scale=1.3, figscale=.4, same_color=False):
+    figsize = np.asarray(raster.shape) * figscale
+    figsize = figsize[1], figsize[0]
     fig = plt.figure(figsize=figsize)
-    plt.imshow(raster, cmap='gray', origin='upper')
-    plt.quiver(h_range, w_range, u.imag, u.real, color='red', **DEFAULT_QUIVEROPTS)
-    plt.quiver(h_range, w_range, v.imag, v.real, color='brown', **DEFAULT_QUIVEROPTS)
-    plt.close()
-    return fig
+    plt.imshow(raster, cmap='gray')
+    args = dict(pivot='middle', headaxislength=0, headlength=0,
+                units='xy', angles='xy', scale_units='xy', scale=scale, width=.1)
+    qu = plt.quiver(u[0], u[1], color='red', **args)
+    v_color = 'red' if same_color else 'darkred'
+    qv = plt.quiver(v[0], v[1], color=v_color, **args)
+    return fig, qu, qv
 
 
-def visualize_vector_field_heatmap(field):
-    fig, [[ax1, ax2], [ax3, ax4]] = plt.subplots(2, 2, figsize=(10, 10))
-    ax1.imshow(field[0])
-    ax1.set_title('component 1, real part')
-    ax2.imshow(field[1])
-    ax2.set_title('component 1, imag part')
-    ax3.imshow(field[2])
-    ax3.set_title('component 2, real part')
-    ax4.imshow(field[3])
-    ax4.set_title('component 2, imag part')
-    plt.close()
-    return fig
+def redraw_polyvector_field(qu, qv, u, v):
+    qu.set_UVC(u[0], u[1])
+    qv.set_UVC(v[0], v[1])
