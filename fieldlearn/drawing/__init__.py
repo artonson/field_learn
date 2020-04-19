@@ -56,3 +56,38 @@ def draw_polyvector_field(u, v, raster, scale=1.3, figscale=0.2, same_color=Fals
 def redraw_polyvector_field(qu, qv, u, v):
     qu.set_UVC(u[0], u[1])
     qv.set_UVC(v[0], v[1])
+
+
+def draw_polyvector_field_dif(u, v, u0, v0, raster, scale=1.3, figscale=0.4, same_color=False):
+    """
+    u, v    — initial values    (angles)
+    u0, v0  — optimized values  (angles)
+    """
+    figsize = np.asarray(raster.shape) * figscale
+    figsize = figsize[1], figsize[0] * 3
+    fig, [ax0, ax1, ax2] = plt.subplots(3, 1, figsize=figsize)
+    ax0.set_xlabel('Initial')
+    ax1.set_xlabel('Smoothed')
+    ax2.set_xlabel('Both. Green is initial')
+
+    for ax in [ax0, ax1, ax2]:
+        ax.imshow(raster, cmap='gray')
+        ax.xaxis.set_label_position('top')
+    args = dict(pivot='middle', headaxislength=0, headlength=0,
+                units='xy', angles='xy', scale_units='xy', scale=scale, width=.1)
+
+    ax0.quiver(u0[0], u0[1], color='red', **args)
+    v_color = 'red' if same_color else 'darkred'
+    ax0.quiver(v0[0], v0[1], color=v_color, **args)
+
+    ax2.quiver(u0[0], u0[1], color='green', **args)
+    v_color = 'green' if same_color else 'darkgreen'
+    ax2.quiver(v0[0], v0[1], color=v_color, **args)
+
+    for ax in [ax1, ax2]:
+        ax.quiver(u[0], u[1], color='red', **args)
+        v_color = 'red' if same_color else 'darkred'
+        ax.quiver(v[0], v[1], color=v_color, **args)
+
+    fig.tight_layout()
+    return fig

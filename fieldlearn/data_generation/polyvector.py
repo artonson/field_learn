@@ -1,12 +1,15 @@
 import torch
 import numpy as np
+from typing import Callable, Tuple
 from vectran.data.graphics.graphics import VectorImage
 from vectran.renderers.cairo import render as cairo_render
 from vectran.optimization.optimizer.primitive_aligner import prepare_pixel_coordinates
 from vectran.optimization.primitives.quadratic_bezier_tensor import QuadraticBezierTensor
+from fieldlearn.data_generation.utils import components_to_angle, angle_to_components
+from fieldlearn.data_generation.smoothing import loss_function
 
 
-def compute_tangent_field_for_primitives(control_points, widths, raster, device, cardano_tol=1e-2, division_eps=1e-3):
+def tangent_fields_for_beziers(control_points, widths, raster, device, cardano_tol=1e-2, division_eps=1e-3):
     """
     :param control_points:
         tensor of control points for quadratic bezier curves
@@ -62,7 +65,7 @@ def compute_tangent_field_for_primitives(control_points, widths, raster, device,
     return tangent_fields
 
 
-def merge_primitive_tangent_fields_to_polyvector_field(tangent_fields, raster, device, similar_direction_tol=0.9):
+def field_from_tangent(tangent_fields, raster, device, similar_direction_tol=0.9):
     """
     :param tangent_fields:
         tensor with tangent fields for each primitive
@@ -103,22 +106,26 @@ def merge_primitive_tangent_fields_to_polyvector_field(tangent_fields, raster, d
         # find if abs(cos(tangent_1, tangent_2)) > similar_direction_tol
         mask_is_similar = (u * tangent_fields[primitive_idx]).sum(dim=0).abs() > similar_direction_tol
 
-        v[:, ~mask_is_similar & mask_second_comp] = tangent_fields[primitive_idx, :, ~mask_is_similar & mask_second_comp]
+        v[:, ~mask_is_similar & mask_second_comp] = tangent_fields[primitive_idx, :,
+                                                    ~mask_is_similar & mask_second_comp]
 
     return u, v
 
 
-def compute_polyvector_field(img: VectorImage,
-                             device=torch.device('cuda'),
-                             cardano_tol=1e-2, division_eps=1e-3, similar_direction_tol=0.9):
+def compute_field(img: VectorImage,
+                  smoothing_fn: Callable[
+                                 [torch.Tensor, torch.Tensor], Tuple[torch.Tensor, torch.Tensor]] = None,
+                  device=torch.device('cuda'),
+                  alignment_tol=1e-2, division_eps=1e-3, similar_direction_tol=0.9):
     """
     Renders a VectorImage and computes polyvector field based on the render
 
     :param img:
         VectorImage for an svg file
-    :param renderer:
-        method to render an svg file
-    :param cardano_tol:
+    :param smoothing_fn:
+        function
+    :param alignment_tol:
+        used in calculation of canonical coordinates for tangent fields
     :param division_eps:
     :param similar_direction_tol:
         used for filtering overlapping primitives
@@ -147,12 +154,34 @@ def compute_polyvector_field(img: VectorImage,
 
     raster = img.render(cairo_render)
 
-    tangent_fields = compute_tangent_field_for_primitives(
-        control_points, widths, raster, device, cardano_tol, division_eps)
+    tangent_fields = tangent_fields_for_beziers(
+        control_points, widths, raster, device, alignment_tol, division_eps)
 
-    u, v = merge_primitive_tangent_fields_to_polyvector_field(
+    u, v = field_from_tangent(
         tangent_fields, raster, device, similar_direction_tol)
 
-    u = u.detach().cpu().numpy()
-    v = v.detach().cpu().numpy()
-    return u, v
+    if not smoothing_fn:
+        return u, v
+
+    u0, v0 = smoothing_fn(u, v)
+    return u0, v0
+
+
+def smooth_field(u, v, num_iters=100, fidelity_w=0.4, lr=0.1, device=torch.device('cuda')):
+    u0 = components_to_angle(u)
+    v0 = components_to_angle(v)
+
+    u0 = u0.to(device)
+    v0 = v0.to(device)
+
+    u = u0.clone().requires_grad_()
+    v = v0.clone().requires_grad_()
+    optimizer = torch.optim.Adam([u, v], lr=lr)
+
+    for i in range(num_iters):
+        loss = loss_function(u, v, u0, v0, fidelity_w=fidelity_w)
+        optimizer.zero_grad()
+        loss.backward()
+        optimizer.step()
+
+    return angle_to_components(u0), angle_to_components(v0)
