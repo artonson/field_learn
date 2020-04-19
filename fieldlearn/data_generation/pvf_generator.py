@@ -42,7 +42,7 @@ def compute_tangent_field_for_primitives(control_points, widths, raster, device,
         widths,
         dtype=torch.float32, device=device)
 
-    renders = beziers.render_with_cairo_each(raster.shape[0], raster.shape[1])
+    renders = beziers.render_with_cairo_each(height=raster.shape[0], width=raster.shape[1])[0]
 
     pixel_coords = prepare_pixel_coordinates(
         torch.empty([1, raster.shape[0], raster.shape[1]], dtype=torch.float32)).to(device)
@@ -62,7 +62,7 @@ def compute_tangent_field_for_primitives(control_points, widths, raster, device,
     return tangent_fields
 
 
-def merge_primitive_tangent_fields_to_polyvector_field(tangent_fields, raster, device, similar_direction_tol=1e-2):
+def merge_primitive_tangent_fields_to_polyvector_field(tangent_fields, raster, device, similar_direction_tol=0.9):
     """
     :param tangent_fields:
         tensor with tangent fields for each primitive
