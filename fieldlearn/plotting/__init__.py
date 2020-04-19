@@ -6,7 +6,7 @@ from vectran.data.graphics.graphics import VectorImage
 from vectran.renderers.cairo import render as cairo_render
 
 
-def draw_vector_image_skeleton(img: VectorImage, renderer=cairo_render, figscale=.4):
+def draw_vector_image_skeleton(img: VectorImage, renderer=cairo_render, figscale=0.2):
     # build control commands
     join_points = []
     control_points = []
@@ -40,7 +40,7 @@ def draw_vector_image_skeleton(img: VectorImage, renderer=cairo_render, figscale
     return fig
 
 
-def draw_polyvector_field(u, v, raster, scale=1.3, figscale=.4, same_color=False):
+def draw_polyvector_field(u, v, raster, scale=1.3, figscale=0.2, same_color=False):
     figsize = np.asarray(raster.shape) * figscale
     figsize = figsize[1], figsize[0]
     fig = plt.figure(figsize=figsize)
