@@ -64,8 +64,8 @@ def visualize_vector_field_cross(raster, field, figsize=(10, 10)):
 
     fig = plt.figure(figsize=figsize)
     plt.imshow(raster, cmap='gray', origin='upper')
-    plt.quiver(h_range, w_range, u.real, u.imag, color='red', **DEFAULT_QUIVEROPTS)
-    plt.quiver(h_range, w_range, v.real, v.imag, color='brown', **DEFAULT_QUIVEROPTS)
+    plt.quiver(h_range, w_range, u.imag, u.real, color='red', **DEFAULT_QUIVEROPTS)
+    plt.quiver(h_range, w_range, v.imag, v.real, color='brown', **DEFAULT_QUIVEROPTS)
     plt.close()
     return fig
 
