@@ -5,7 +5,7 @@ from vectran.data.graphics.graphics import VectorImage
 from vectran.renderers.cairo import render as cairo_render
 from vectran.optimization.optimizer.primitive_aligner import prepare_pixel_coordinates
 from vectran.optimization.primitives.quadratic_bezier_tensor import QuadraticBezierTensor
-from fieldlearn.data_generation.utils import components_to_angle, angle_to_components
+from fieldlearn.utils import complex_to_angle, angle_to_complex
 from fieldlearn.data_generation.smoothing import loss_function
 
 
@@ -123,7 +123,7 @@ def compute_field(img: VectorImage,
     :param img:
         VectorImage for an svg file
     :param smoothing_fn:
-        function
+        function used for field smoothing after initial construction
     :param alignment_tol:
         used in calculation of canonical coordinates for tangent fields
     :param division_eps:
@@ -168,8 +168,8 @@ def compute_field(img: VectorImage,
 
 
 def smooth_field(u, v, num_iters=100, fidelity_w=0.4, lr=0.1, device=torch.device('cuda')):
-    u0 = components_to_angle(u)
-    v0 = components_to_angle(v)
+    u0 = complex_to_angle(u)
+    v0 = complex_to_angle(v)
 
     u0 = u0.to(device)
     v0 = v0.to(device)
@@ -184,4 +184,4 @@ def smooth_field(u, v, num_iters=100, fidelity_w=0.4, lr=0.1, device=torch.devic
         loss.backward()
         optimizer.step()
 
-    return angle_to_components(u0), angle_to_components(v0)
+    return angle_to_complex(u0), angle_to_complex(v0)
