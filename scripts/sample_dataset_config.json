@@ -1,0 +1,12 @@
+{
+  "compute_params": {
+    "alignment_tol": 1e-2,
+    "division_eps": 1e-3,
+    "similar_direction_tol": 0.9
+  },
+  "smoothing_params": {
+    "num_iters": 100,
+    "fidelity_w": 0.4,
+    "lr": 0.1
+  }
+}
