@@ -39,10 +39,10 @@ fi
 # CONT_<anything> refers to paths INSIDE container
 SHARED_MEM="25g"        # amount of shared memory to reserve for the prefetchers
 
-CONTAINER="artonson/vectran:latest"
+CONTAINER="mariataktasheva/fieldlearn:latest"
 docker inspect --type=image ${CONTAINER} >/dev/null || docker pull ${CONTAINER}
 
-HOST_CODE_DIR=$(realpath $(dirname `realpath $0`)/..)     # dirname of THIS file
+HOST_CODE_DIR=$(realpath $(dirname `realpath $0`)/../..)     # dirname of THIS file
 CONT_CODE_DIR="/code"
 CONT_DATA_DIR="/data"
 CONT_LOG_DIR="/logs"

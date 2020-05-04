@@ -7,7 +7,7 @@ set -x
 # ./build_docker.sh [-p]
 #     -p:       push the build image to the dockerhub under 'artonson' username
 
-IMAGE_NAME="artonson/vectran"
+IMAGE_NAME="mariataktasheva/fieldlearn"
 IMAGE_NAME_TAG="${IMAGE_NAME}:latest"
 DOCKERFILE="$(dirname `realpath $0`)/Dockerfile"     # full pathname of Dockerfile
 

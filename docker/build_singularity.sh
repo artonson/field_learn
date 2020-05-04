@@ -4,15 +4,13 @@ set -e
 set -x
 
 # example launch string:
-# ./build_singularity.sh [-p]
+# ./build_singularity.sh 
 
-module load apps/singularity-3.2.0
-
-SIMAGES_DIR=/gpfs/gpfs0/3ddl/singularity-images
+SIMAGES_DIR=/gpfs/gpfs0/3ddl/field_learn/singularity-images
 
 [[ -d ${SIMAGES_DIR} ]] || mkdir ${SIMAGES_DIR}
 
-IMAGE_NAME="artonson/vectran"
+IMAGE_NAME="mariataktasheva/fieldlearn"
 IMAGE_VERSION="latest"
 IMAGE_NAME_TAG="${IMAGE_NAME}:${IMAGE_VERSION}"
 SIMAGE_FILENAME="${SIMAGES_DIR}/$(echo ${IMAGE_NAME_TAG} | tr /: _).sif"

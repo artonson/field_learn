@@ -38,8 +38,8 @@ fi
 
 
 # Copy the exact same code used for building the container
-SIMAGES_DIR=/gpfs/gpfs0/3ddl/singularity-images
-IMAGE_NAME="artonson/vectran"
+SIMAGES_DIR=/gpfs/gpfs0/3ddl/field_learn/singularity-images
+IMAGE_NAME="mariataktasheva/fieldlearn"
 IMAGE_VERSION="latest"
 IMAGE_NAME_TAG="${IMAGE_NAME}:${IMAGE_VERSION}"
 SIMAGE_FILENAME="${SIMAGES_DIR}/$(echo ${IMAGE_NAME_TAG} | tr /: _).sif"
@@ -48,7 +48,7 @@ SIMAGE_FILENAME="${SIMAGES_DIR}/$(echo ${IMAGE_NAME_TAG} | tr /: _).sif"
 [[ -f ${SIMAGE_FILENAME} ]] || ./build_singularity.sh
 
 
-HOST_CODE_DIR=$(realpath $(dirname `realpath $0`)/..)     # dirname of THIS file
+HOST_CODE_DIR=$(realpath $(dirname `realpath $0`)/../..)     # dirname of THIS file
 CONT_CODE_DIR="/code"
 CONT_DATA_DIR="/data"
 CONT_LOG_DIR="/logs"
