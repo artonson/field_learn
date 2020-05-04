@@ -8,6 +8,7 @@ RUN apt-get clean \
  && apt-get install -y --no-install-recommends \
     git \
     wget \
+    curl \
     bzip2 \
     vim \
     nano \
@@ -22,8 +23,11 @@ RUN apt-get clean \
     graphviz \
     tmux \
     screen \
-    htop
+    htop  
 
+# install node.js to use js2py package
+RUN curl -sL https://deb.nodesource.com/setup_14.x | sudo -E bash - 
+RUN apt-get install -y nodejs
 
 # Create a non-root user and switch to it.
 RUN adduser --disabled-password --gecos '' --shell /bin/bash user
