@@ -1,4 +1,5 @@
 import os
+import sys
 import glob
 import json
 import argparse
@@ -8,6 +9,10 @@ import multiprocessing as mp
 
 from PIL import Image
 from tqdm import tqdm
+
+sys.path.append('/code/dev.vectorization')
+sys.path.append('/code/field_learn')
+
 from vectran.data.graphics.graphics import VectorImage
 from vectran.data.graphics.units import Pixels
 from vectran.renderers.cairo import render as cairo_render
@@ -19,15 +24,24 @@ def parse_args():
     parser.add_argument('-i', '--input-dir', dest='input_dir',
                         required=True, help='input dir as glob path')
     parser.add_argument('-o', '--output-dir', dest='output_dir',
-                        required=True, help='output dir.')
+                        required=True, help='output dir')
     parser.add_argument('-c', '--dataset-config', dest='dataset_config',
-                        required=True, help='dataset configuration file.')
+                        default='sample_dataset_config.json',
+                        required=True, help='dataset configuration file')
     return parser.parse_args()
 
 
-def calculate_vector_field(input_files, output_dir, device, config):
+def calculate_vector_field(input_files, input_prefix, output_dir, device, config):
     
-    for svg_path in tqdm(input_files):
+    for svg_path in input_files:
+        basename = svg_path[len(input_prefix):-4].replace('/', '_') 
+        npy_name = os.path.join(output_dir, 'field', basename + '.npy')
+        raster_name = os.path.join(output_dir, 'raster', basename + '.png')
+        
+        if os.path.isfile(npy_name) and os.path.isfile(raster_name):
+            continue
+        
+        print(f'Running {basename} on device {device}')
         img = VectorImage.from_svg(svg_path)
         raster = img.render(cairo_render)
         
@@ -35,16 +49,15 @@ def calculate_vector_field(input_files, output_dir, device, config):
                              smoothing_fn=lambda x, y: smooth_field(x, y, **config["smoothing_params"]),
                              device=device,
                              **config["compute_params"])
-
-        basename = os.path.basename(svg_path)[:-4]
+        
         np.save(
-            os.path.join(args.output_dir, 'field', basename + '.npy'),
+            npy_name,
             np.vstack([u.detach().cpu().numpy(), v.detach().cpu().numpy()])
         )
 
         raster_image = Image.fromarray(raster, mode='L')
-        raster_image.save(os.path.join(args.output_dir, 'raster', basename + '.png'))
-
+        raster_image.save(raster_name)
+        
 
 if __name__ == '__main__':
     args = parse_args()
@@ -52,8 +65,9 @@ if __name__ == '__main__':
     with open(args.dataset_config) as json_file:
         config = json.load(json_file)
         
-    input_files = glob.glob(args.input_dir)
-    
+    input_files = glob.glob(args.input_dir, recursive=True)
+    input_prefix = os.path.commonprefix(input_files)
+        
     os.makedirs(os.path.join(args.output_dir, 'field'), exist_ok=True)
     os.makedirs(os.path.join(args.output_dir, 'raster'), exist_ok=True)
     
@@ -68,8 +82,11 @@ if __name__ == '__main__':
         running_processes.append(
             mp.Process(
                 target=calculate_vector_field, 
-                args=(input_files_batch, args.output_dir, torch.device('cuda', job_idx), config)
+                args=(input_files_batch, input_prefix, args.output_dir, torch.device('cuda', job_idx), config)
         ))
+        
+    for p in running_processes:
+        p.start()
         
     for p in running_processes:
         p.join()
