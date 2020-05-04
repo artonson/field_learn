@@ -7,13 +7,14 @@ import argparse
 import numpy as np
 
 sys.path.append('/code/dev.vectorization')
+sys.path.append('/code/field_learn')
 
 from vectran.data.graphics.graphics import VectorImage, Path
 from vectran.simplification.join_qb import join_quad_beziers
 from vectran.renderers.cairo import render, PT_LINE, PT_QBEZIER
 from vectran.simplification.detect_overlaps import has_overlaps
-
 from vectran.data.graphics.units import Pixels
+from fieldlearn.utils import line_to_curve
 
 class TimeoutException(Exception): pass
 
@@ -59,14 +60,6 @@ def prepare_patch(patch, patch_size,
     curves = curves.tolist() + [line_to_curve(line) for line in lines]
     patch.paths = ([Path.from_primitive(PT_QBEZIER, prim) for prim in curves])
     return patch
-
-
-def line_to_curve(line):
-    p1 = line[:2]
-    p3 = line[2:4]
-    p2 = (p1 + p3) / 2
-    width = line[4]
-    return np.array([*p1, *p2, *p3, width])
 
 
 def parse_args():

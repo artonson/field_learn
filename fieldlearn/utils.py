@@ -3,6 +3,14 @@ import numpy as np
 from scipy import ndimage
 
 
+def line_to_curve(line):
+    p1 = line[:2]
+    p3 = line[2:4]
+    p2 = (p1 + p3) / 2
+    width = line[4]
+    return np.array([*p1, *p2, *p3, width])
+
+
 def complex_to_angle(field: torch.Tensor):
     """
     field: 2 x render_height x render_width

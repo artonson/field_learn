@@ -49,12 +49,12 @@ def calculate_vector_field(input_files, input_prefix, output_dir, device, config
                              smoothing_fn=lambda x, y: smooth_field(x, y, **config["smoothing_params"]),
                              device=device,
                              **config["compute_params"])
-        
+                
         np.save(
             npy_name,
             np.vstack([u.detach().cpu().numpy(), v.detach().cpu().numpy()])
         )
-
+        
         raster_image = Image.fromarray(raster, mode='L')
         raster_image.save(raster_name)
         

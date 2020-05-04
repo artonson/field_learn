@@ -1,11 +1,13 @@
 import torch
 import numpy as np
 from typing import Callable, Tuple
-from vectran.data.graphics.graphics import VectorImage
+from vectran.data.graphics.graphics import VectorImage, Path
+from vectran.data.graphics.graphics import VectorImage, Path
+from vectran.renderers.cairo import PT_LINE, PT_QBEZIER
 from vectran.renderers.cairo import render as cairo_render
 from vectran.optimization.optimizer.primitive_aligner import prepare_pixel_coordinates
 from vectran.optimization.primitives.quadratic_bezier_tensor import QuadraticBezierTensor
-from fieldlearn.utils import complex_to_angle, angle_to_complex
+from fieldlearn.utils import complex_to_angle, angle_to_complex, line_to_curve
 from fieldlearn.data_generation.smoothing import loss_function
 
 
@@ -112,6 +114,14 @@ def field_from_tangent(tangent_fields, raster, device, similar_direction_tol=0.9
     return u, v
 
 
+def convert_lines_to_curves(img: VectorImage):
+    lines, curves = img.vahe_representation()
+    lines = np.asarray(lines)
+    curves = np.asarray(curves)
+    curves = curves.tolist()  + [line_to_curve(line) for line in lines]
+    img.paths = ([Path.from_primitive(PT_QBEZIER, prim) for prim in curves])
+    return img
+
 def compute_field(img: VectorImage,
                   smoothing_fn: Callable[
                                  [torch.Tensor, torch.Tensor], Tuple[torch.Tensor, torch.Tensor]] = None,
@@ -142,13 +152,15 @@ def compute_field(img: VectorImage,
         component_1 = u[0] + i * u[1] = cos(alpha_1) + i * sin(alpha_1)
         component_2 = v[0] + i * v[1] = cos(alpha_2) + i * sin(alpha_2)
     """
+    convert_lines_to_curves(img)
+    
     control_points = []
     widths = []
     for path in img.paths:
         for curve in path:
             control_points.append([(p.real, p.imag) for p in curve.bpoints()])
             widths.append(float(path.width))
-
+    
     control_points = np.array(control_points, dtype=np.float32)
     widths = np.array(widths, dtype=np.float32)
 
