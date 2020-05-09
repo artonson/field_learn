@@ -14,9 +14,10 @@ def draw_vector_image_skeleton(img: VectorImage, renderer=cairo_render, figscale
     for path in img.paths:
         for curve in path:
             control_points.extend([(p.real, p.imag) for p in curve.bpoints()])
-            join_points.append(control_points[-1])
             control_points.append(control_points[-1])
             control_commands.extend([mpath.Path.MOVETO, mpath.Path.CURVE3, mpath.Path.CURVE3, mpath.Path.MOVETO])
+            join_points.append(control_points[0])
+            join_points.append(control_points[-1])
 
     control_points.append(control_points[-1])
     control_commands.append(mpath.Path.CLOSEPOLY)
@@ -28,12 +29,12 @@ def draw_vector_image_skeleton(img: VectorImage, renderer=cairo_render, figscale
     # plot image skeleton
     figsize = np.asarray(raster.shape) * figscale
     fig, ax = plt.subplots(figsize=figsize)
-    pp = mpatches.PathPatch(mpath.Path(control_points, control_commands), fc='none', linewidth=2.5, edgecolor='#FFC11E')
+    pp = mpatches.PathPatch(mpath.Path(control_points, control_commands), fc='none', linewidth=4, edgecolor='#FFC11E')
 
     x, y = zip(*join_points)
     ax.imshow(raster, cmap='gray', origin='upper')
-    ax.plot(x, y, color='#FFC11E', marker='o', markersize=5, markeredgecolor='black', linestyle='')
     ax.add_patch(pp)
+    ax.plot(x, y, color='#FFC11E', marker='o', markersize=10, markeredgecolor='black', linestyle='')
     ax.set_xlim(0, render_width)
     ax.set_ylim(render_height, 0)
     plt.close()

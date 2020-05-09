@@ -8,7 +8,7 @@ make_patches(){
 	src="$1"
 	filename="$(basename "$src")"
 	echo "Processing $filename"
-	python make_patches.py -i "$src" -o "$dst_dir" --patch-height=128 --patch-width=128 --image-scale=2 --num-augmentations=4
+	python make_patches.py -i "$src" -o "$dst_dir" --patch-height=128 --patch-width=128 --image-scale=2 --num-augmentations=6
 }
 export -f make_patches
 

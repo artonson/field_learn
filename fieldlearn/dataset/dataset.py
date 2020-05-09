@@ -13,10 +13,14 @@ class PolyVectorFieldDataset(Dataset):
         self.data_path = raster_path
         self.target_path = field_path
 
-        self.rasters = glob.glob(raster_path)
-        self.fields = glob.glob(field_path)
+        self.rasters = sorted(glob.glob(raster_path))
+        self.fields = sorted(glob.glob(field_path))
 
         assert len(self.rasters) == len(self.fields)
+        raster_names = [x.split('/')[-1][:-4] for x in self.rasters]
+        field_names = [x.split('/')[-1][:-4] for x in self.fields]
+        
+        assert raster_names == field_names
 
         self.raster_transforms = raster_transforms
 
@@ -27,4 +31,4 @@ class PolyVectorFieldDataset(Dataset):
         raster = Image.open(self.rasters[idx])
         field = np.load(self.fields[idx])
         field = np.nan_to_num(field)
-        return self.raster_transforms(raster), torch.tensor(field)
+        return transforms.ToTensor()(raster), torch.tensor(field)

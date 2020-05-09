@@ -5,7 +5,7 @@ set -x
 
 # example launch string:
 # ./run_singularity.sh -d <server_data_dir> -l <server_logs_dir> -g <gpu-indexes>
-#   server_data_dir:        the data directory where the training sample resides
+#   server_data_dir:        the data directory where the dataset sample resides
 #   server_logs_dir:        the directory where the output logs are supposed to be written
 #   gpu:                    comma-separated list of gpus
 
@@ -38,8 +38,10 @@ fi
 
 
 # Copy the exact same code used for building the container
-SIMAGES_DIR=/gpfs/gpfs0/3ddl/field_learn/singularity-images
-IMAGE_NAME="mariataktasheva/fieldlearn"
+# SIMAGES_DIR=/gpfs/gpfs0/3ddl/field_learn/singularity-images
+# IMAGE_NAME="mariataktasheva/fieldlearn"
+SIMAGES_DIR=/gpfs/gpfs0/3ddl/singularity-images
+IMAGE_NAME="artonson/vectran"
 IMAGE_VERSION="latest"
 IMAGE_NAME_TAG="${IMAGE_NAME}:${IMAGE_VERSION}"
 SIMAGE_FILENAME="${SIMAGES_DIR}/$(echo ${IMAGE_NAME_TAG} | tr /: _).sif"

@@ -5,7 +5,7 @@ set -e
 
 # example launch string:
 # ./run_docker.sh -d <server_data_dir> -l <server_logs_dir> -g gpu
-#   server_data_dir:        the data directory where the training sample resides
+#   server_data_dir:        the data directory where the dataset sample resides
 #   server_logs_dir:        the directory where the output logs are supposed to be written
 #   gpu:                    comma-separated list of gpus
 

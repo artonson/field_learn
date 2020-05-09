@@ -25,6 +25,20 @@ def angle_to_complex(field: torch.Tensor):
     return torch.stack([torch.cos(field), torch.sin(field)])
 
 
+def complex_to_angle_batch(field: torch.Tensor):
+    """
+    field: bs x 2 x render_height x render_width
+    """
+    return torch.atan2(field[:, 1], field[:, 0])
+
+
+def angle_to_complex_batch(field: torch.Tensor):
+    """
+    field: bs x 2 x render_height x render_width
+    """
+    return torch.stack([torch.cos(field), torch.sin(field)], dim=1)
+
+
 def rotate_component(field, degrees):
     """
     field: 2 x render_height x render_width
