@@ -19,6 +19,7 @@ from fieldlearn.dataset.dataset import PolyVectorFieldDataset
 from fieldlearn.models.unet import SmallUnetRegression
 from fieldlearn.loss.lapl1 import Lap1Loss
 from fieldlearn.loss.mse_consistency import MSEConsistencyLoss
+from fieldlearn.utils import complex_to_angle_batch
 
 
 def parse_args():
@@ -53,11 +54,6 @@ def calc_orientation_similarity(rasters, true_component, pred_component):
     sim = (1 + torch.cos(true_angle - pred_angle)) / 2
     sim = sim.sum(dim=(-1, -2)) / rasters[rasters < 1].shape[0]
     return torch.max(sim) / 11
-
-
-from fieldlearn.utils import complex_to_angle_batch
-from fieldlearn.data_generation.smoothing import loss_function_batch as fidelity_consistency_loss
-import torch.nn.functional as F
 
 
 def train_loop(config, model, train_loader, val_loader):
