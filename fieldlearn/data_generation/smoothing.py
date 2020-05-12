@@ -100,4 +100,3 @@ def loss_function_batch(u, v, u0, v0, fidelity_w=0.4):
     sc = sc.sum(dim=0).mean()
 
     return sc * (1 - fidelity_w) + fidelity * fidelity_w
-

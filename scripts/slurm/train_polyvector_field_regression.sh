@@ -3,25 +3,38 @@
 set -e
 set -x
 
-# example launch string:
-# ./run_singularity.sh -d <server_data_dir> -l <server_logs_dir> -g <gpu-indexes>
-#   server_data_dir:        the data directory where the dataset sample resides
-#   server_logs_dir:        the directory where the output logs are supposed to be written
-#   gpu:                    comma-separated list of gpus
+if [[ $# -lt 2 ]]
+then
+    echo "run_singularity.sh -c <config_path>"
+    exit 1
+fi
+
+#Get all the required options and set the necessary variables
+while getopts "c:" opt
+do
+    case ${opt} in
+        c) CONFIG_PATH=$OPTARG;;
+        *) echo "No reasonable options found!";;
+    esac
+done
+
+if [[ ! -f ${CONFIG_PATH} ]]; then
+    echo "config path is not set or not a file";
+    exit 1
+fi
+
+# make a model tag from config name
+TAG=$(basename -- "$CONFIG_PATH")
+EXTENTION="${TAG##*.}"
+TAG="${TAG%.*}"
 
 module load apps/singularity-3.2.0
 
-# Copy the exact same code used for building the container
-# SIMAGES_DIR=/gpfs/gpfs0/3ddl/field_learn/singularity-images
-# IMAGE_NAME="mariataktasheva/fieldlearn"
 SIMAGES_DIR=/gpfs/gpfs0/3ddl/singularity-images
 IMAGE_NAME="artonson/vectran"
 IMAGE_VERSION="latest"
 IMAGE_NAME_TAG="${IMAGE_NAME}:${IMAGE_VERSION}"
 SIMAGE_FILENAME="${SIMAGES_DIR}/$(echo ${IMAGE_NAME_TAG} | tr /: _).sif"
-
-# Build the container if it does not exist
-[[ -f ${SIMAGE_FILENAME} ]] || ./build_singularity.sh
 
 HOST_CODE_DIR="/gpfs/data/home/m.taktasheva/github" 
 HOST_DATA_DIR="/gpfs/gpfs0/3ddl/"
@@ -30,11 +43,10 @@ CONT_CODE_DIR="/code"
 CONT_DATA_DIR="/data"
 CONT_LOG_DIR="/logs"
 
-if [[ -z "${GPU_ENV}" ]] ; then
-    # set all GPUs as visible in the docker
-    num_gpus=`nvidia-smi -L | wc -l`
-    GPU_ENV=`seq -s, 0 $((num_gpus-1))`
-fi
+TRAIN_SCRIPT="${CONT_CODE_DIR}/field_learn/scripts/train_polyvector_field_regression.py"
+
+num_gpus=`nvidia-smi -L | wc -l`
+GPU_ENV=`seq -s, 0 $((num_gpus-1))`
 
 echo "******* LAUNCHING CONTAINER ${SIMAGE_FILENAME} *******"
 echo "      Pushing you to ${CONT_CODE_DIR} directory"
@@ -42,16 +54,21 @@ echo "      Data is at ${CONT_DATA_DIR}"
 echo "      Writable logs are at ${CONT_LOG_DIR}"
 echo "      Environment: PYTHONPATH=${CONT_CODE_DIR}"
 echo "      Environment: CUDA_VISIBLE_DEVICES=${GPU_ENV}"
+echo "      Model config: ${CONFIG_PATH}"
+echo "      Model tag: ${TAG}"
+
 
 CUDA_VISIBLE_DEVICES=${GPU_ENV} \
 PYTHONPATH=${CONT_CODE_DIR} \
-    singularity shell \
+    singularity exec \
         --nv \
         --bind ${HOST_CODE_DIR}:${CONT_CODE_DIR} \
         --bind ${HOST_DATA_DIR}:${CONT_DATA_DIR} \
         --bind ${HOST_LOG_DIR}:${CONT_LOG_DIR} \
-        --bind /gpfs:/gpfs \
         --bind $PWD:/run/user \
         --workdir ${CONT_CODE_DIR} \
-        ${SIMAGE_FILENAME}
+        ${SIMAGE_FILENAME} \
+        bash -c "python ${TRAIN_SCRIPT} \\
+                --model-tag ${TAG} \\
+                --config ${CONFIG_PATH}"
 

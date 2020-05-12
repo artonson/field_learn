@@ -1,0 +1,14 @@
+{
+  "dataset": "abc_complex",
+  "degraded": true,
+  "degraded_alpha": 1,
+  "degraded_threshold": 0.5,
+  "loss": "lapl1",
+  "lr": 0.001,
+  "num_epochs": 50,
+  "batch_size": 32,
+  "batches_per_train": 2000,
+  "batches_per_val": 200,
+  "checkpoint_path": "/gpfs/data/home/m.taktasheva/runs/",
+  "checkpoint_every": 1
+}

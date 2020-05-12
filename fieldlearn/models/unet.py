@@ -17,9 +17,9 @@ def conv_bn_relu(in_channels, out_channels, dilation=1):
     return module
 
 
-class SmallUnetRegression(nn.Module):
+class SmallUnet(nn.Module):
     def __init__(self, out_channels=4):
-        super(SmallUnetRegression, self).__init__()
+        super(SmallUnet, self).__init__()        
         # encoder
         self.add_module('EncConvBnRelu1_1', conv_bn_relu(1, 64))
         self.add_module('EncConvBnRelu1_2', conv_bn_relu(64, 64))
@@ -81,11 +81,4 @@ class SmallUnetRegression(nn.Module):
         x = torch.cat((x, enc_1), dim=1)
         x = self.PredConvBnRelu_2(self.PredConvBnRelu_1(x))
         x = self.PredDense(x)
-        
-        # normalize output vectors
-        batch_size, c, h, w = x.shape
-        x = x.reshape(batch_size, c//2, 2 * h, w)
-        x = torch.nn.functional.normalize(x, dim=1)
-        x = x.reshape(batch_size, c, h, w)
-        x = x.squeeze(dim=1)
         return x
